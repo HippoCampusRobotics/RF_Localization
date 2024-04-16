@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from rtlsdr import *
 from scipy import signal
 from scipy.special import lambertw
+
 # import SoapySDR #####
 # from SoapySDR import * #SOAPY_SDR_ constants #####
 
@@ -23,6 +24,7 @@ from scipy.special import lambertw
 # define classes
 class RfEar(object):
     """A simple class to compute PSD with a DVBT-dongle."""
+
     def __init__(self, sdr_type, center_freq, freqspan=1e5):
         """
         init-method
@@ -44,13 +46,16 @@ class RfEar(object):
                 print(freqRange)
 
             # apply settings
-            self.__sdr.setSampleRate(SOAPY_SDR_RX, 0, 2.048e6)  # todo test! initially 1e6 then 2.048e6 within sample AirSpy Program
+            self.__sdr.setSampleRate(
+                SOAPY_SDR_RX, 0, 2.048e6
+            )  # todo test! initially 1e6 then 2.048e6 within sample AirSpy Program
             self.__sdr.setFrequency(SOAPY_SDR_RX, 0, center_freq)
             self.__sdr.setBandwidth(SOAPY_SDR_RX, 0, 1e6)
             self.__sdr.setGain(SOAPY_SDR_RX, 0, 20)
 
             # setup a stream (complex floats)
-            self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX, SOAPY_SDR_CF32, [0])
+            self.__rxStream = self.__sdr.setupStream(SOAPY_SDR_RX,
+                                                     SOAPY_SDR_CF32, [0])
             t.sleep(1)
             self.__sdr.activateStream(self.__rxStream)  # start streaming
 
@@ -159,7 +164,8 @@ class RfEar(object):
             self.__sdr.deactivateStream(self.__rxStream)  # stop streaming
             self.__sdr.activateStream(self.__rxStream)  # start streaming
             plt.pause(0.01)
-            sr = self.__sdr.readStream(self.__rxStream, [self.__buff], len(self.__buff), 32)
+            sr = self.__sdr.readStream(self.__rxStream, [self.__buff],
+                                       len(self.__buff), 32)
             return
         elif self.__sdr_type == 'NooElec':
             iq_sample = self.__sdr.read_samples(self.__samplesize * 1024)
@@ -207,8 +213,9 @@ class RfEar(object):
         elif self.__sdr_type == 'NooElec':
             sample_rate = self.__sdr.sample_rate
         if bprintout:
-            print ('Default sample rate: 2.4MHz')
-            print ('Current sample rate: ' + str(self.__sdr.sample_rate / 1e6) + 'MHz')
+            print('Default sample rate: 2.4MHz')
+            print('Current sample rate: ' + str(self.__sdr.sample_rate / 1e6) +
+                  'MHz')
         return sample_rate
 
     def set_freqtx(self, freqtx_list):
@@ -266,18 +273,26 @@ class RfEar(object):
         if self.__sdr_type == 'AirSpy':
             self.get_sdr_iq_sample()
             # FFT
-            freq, pxx_den = signal.periodogram(self.__buff, fs=self.get_sdr_samplingrate(), nfft=1024)
+            freq, pxx_den = signal.periodogram(self.__buff,
+                                               fs=self.get_sdr_samplingrate(),
+                                               nfft=1024)
 
         elif self.__sdr_type == 'NooElec':
             samples = self.get_sdr_iq_sample()
             # FFT
-            freq, pxx_den = signal.periodogram(samples, fs=self.get_sdr_samplingrate(), nfft=1024)
+            freq, pxx_den = signal.periodogram(samples,
+                                               fs=self.get_sdr_samplingrate(),
+                                               nfft=1024)
 
         # sort the data to get increasing frequencies
-        freq_sorted = np.concatenate((freq[len(freq) / 2:], freq[:len(freq) / 2]), axis=0)
-        pxx_density_sorted = np.concatenate((pxx_den[len(pxx_den) / 2:], pxx_den[:len(pxx_den) / 2]), axis=0)
+        freq_sorted = np.concatenate(
+            (freq[int(len(freq) / 2):], freq[:int(len(freq) / 2)]), axis=0)
+        pxx_density_sorted = np.concatenate(
+            (pxx_den[int(len(pxx_den) / 2):], pxx_den[:int(len(pxx_den) / 2)]),
+            axis=0)
 
-        freq_sorted = freq_sorted + self.get_sdr_centerfreq()  # add center frequency to get absolute frequency values
+        freq_sorted = freq_sorted + self.get_sdr_centerfreq(
+        )  # add center frequency to get absolute frequency values
 
         return freq_sorted, pxx_density_sorted
 
@@ -344,13 +359,14 @@ class RfEar(object):
 
         :return: np array of rss-peaks at freqtx
         """
-        print ('... measuring for ' + str(meastime) + 's ...')
+        print('... measuring for ' + str(meastime) + 's ...')
         elapsed_time = 0.0
         dataseq = []
 
         while elapsed_time < meastime:
             start_calctime = t.time()
-            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(self.get_freqtx())
+            freq_den_max, pxx_den_max = self.get_rss_peaks_at_freqtx(
+                self.get_freqtx())
             # print('get_freqtx= ' + str(self.get_freqtx()))
             # print('freq_found = ' + str(freq_den_max))
             dataseq.append(pxx_den_max)
@@ -362,7 +378,10 @@ class RfEar(object):
         dataseq_mat = np.asarray(dataseq)
         return dataseq_mat
 
-    def manual_calibration_for_one_tx(self, measdata_filename, meastime=5, b_plotting=True):
+    def manual_calibration_for_one_tx(self,
+                                      measdata_filename,
+                                      meastime=5,
+                                      b_plotting=True):
         """
         :return:
         """
@@ -383,7 +402,8 @@ class RfEar(object):
             # loop over all way-points
             while b_new_measurement:
 
-                input_dist = raw_input('Next measurement distance [mm]? (type >end< to exit)')
+                input_dist = input(
+                    'Next measurement distance [mm]? (type >end< to exit)')
 
                 if input_dist == 'end':
                     break
@@ -393,7 +413,8 @@ class RfEar(object):
                 meas_point = [input_dist, 0]
                 dist_list.append(input_dist)
 
-                print('Measuring at Way-Point #' + str(numwp) + ' at distance ' + str(meas_point[0] + 'mm'))
+                print('Measuring at Way-Point #' + str(numwp) +
+                      ' at distance ' + str(meas_point[0] + 'mm'))
 
                 dataseq = self.take_measurement(meastime)
 
@@ -411,7 +432,8 @@ class RfEar(object):
                 for i in range(numtx):
                     str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
 
-                print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
+                print('Measurements taken: ' + str(nummeas) +
+                      ' at sample-size ' + str(self.__samplesize))
 
                 measfile.write(str_base_data + str_freqs + str_rss + '\n')
 
@@ -425,7 +447,10 @@ class RfEar(object):
             print('Measurement file ' + measdata_filename + ' closed :-)')
         return True
 
-    def manual_calibration_for_6_tx(self, point_list, measdata_filename='meas_data_wburg.txt', meastime=3):
+    def manual_calibration_for_6_tx(self,
+                                    point_list,
+                                    measdata_filename='meas_data_wburg.txt',
+                                    meastime=3):
         """
         :return:
         """
@@ -439,7 +464,9 @@ class RfEar(object):
         meas_var = []
         dist_list = []
 
-        str_input = raw_input('To close this program and proceed to the parameter calculation directly enter >exit<')
+        str_input = input(
+            'To close this program and proceed to the parameter calculation directly enter >exit<'
+        )
         if str_input == 'exit':
             print('Close collecting calibration data')
             return
@@ -450,13 +477,18 @@ class RfEar(object):
             # loop over all way-points
             while b_new_measurement:
                 try:
-                    meas_point_select_input = raw_input('\nStart measurement at WP? (0-13)')
+                    meas_point_select_input = input(
+                        '\nStart measurement at WP? (0-13)')
                     meas_point_select = int(meas_point_select_input)
                     if meas_point_select in range(14):
-                        print('Selected WP #' + str(meas_point_select) + ' at position '+ str(point_list[meas_point_select]))
+                        print('Selected WP #' + str(meas_point_select) +
+                              ' at position ' +
+                              str(point_list[meas_point_select]))
                         print('Type >s< + ENTER to start measurement.')
-                        print('Type >stop< + ENTER to stop measurements and calculate cal-parameter')
-                        start_meas = raw_input('Entry:')
+                        print(
+                            'Type >stop< + ENTER to stop measurements and calculate cal-parameter'
+                        )
+                        start_meas = input('Entry:')
                         if start_meas == 's':
                             meas_counter = meas_counter + 1
                             numwp = meas_point_select
@@ -464,7 +496,8 @@ class RfEar(object):
 
                             #dist_list.append(input_dist)
 
-                            print('Measuring at Way-Point #' + str(numwp) + '...')
+                            print('Measuring at Way-Point #' + str(numwp) +
+                                  '...')
 
                             dataseq = self.take_measurement(meastime)
 
@@ -480,10 +513,12 @@ class RfEar(object):
                             # print('data ' + str(dataseq))
                             str_rss = ''
                             for i in range(numtx):
-                                str_rss = str_rss + ' '.join(map(str, dataseq[:, i])) + ' '
+                                str_rss = str_rss + ' '.join(
+                                    map(str, dataseq[:, i])) + ' '
                             # print('Measurements taken: ' + str(nummeas) + ' at sample-size ' + str(self.__samplesize))
 
-                            measfile.write(str_base_data + str_freqs + str_rss + '\n')
+                            measfile.write(str_base_data + str_freqs + str_rss +
+                                           '\n')
 
                             #meas_mean.append(np.mean(dataseq, axis=0))
                             #meas_var.append(np.var(dataseq, axis=0))
@@ -514,20 +549,22 @@ class RfEar(object):
         """Get Power Spectral Density Live Plot."""
         center_freq = self.get_sdr_centerfreq()
 
-        plt.ion()      # turn interactive mode on
+        plt.ion()  # turn interactive mode on
         fig = plt.figure()
         ax = fig.add_subplot(111)
         # init x and y -> y is update with each sample
-        x = np.linspace(center_freq-1024e3, center_freq+1022e3, 1024)  # 1024 as the fft has 1024frequency-steps
+        x = np.linspace(center_freq - 1024e3, center_freq + 1022e3,
+                        1024)  # 1024 as the fft has 1024frequency-steps
         y = x
         line1, = ax.plot(x, y, 'b-')
-
         """ setup plot properties """
 
         plt.axis([center_freq - 1.1e6, center_freq + 1.1e6, -140, 0])
-        xlabels = np.linspace((center_freq-1.0e6)/1e6,
-                              (center_freq+1.0e6)/1e6, 21)
-        plt.xticks(np.linspace(min(x), max(x), 21), xlabels, rotation='vertical')
+        xlabels = np.linspace((center_freq - 1.0e6) / 1e6,
+                              (center_freq + 1.0e6) / 1e6, 21)
+        plt.xticks(np.linspace(min(x), max(x), 21),
+                   xlabels,
+                   rotation='vertical')
 
         plt.grid()
         plt.xlabel('Frequency [MHz]')
@@ -538,7 +575,7 @@ class RfEar(object):
             try:
                 # Busy-wait for keyboard interrupt (Ctrl+C)
                 freq, pxx_den = self.get_power_density_spectrum()
-                line1.set_ydata(10*np.log10(pxx_den))
+                line1.set_ydata(10 * np.log10(pxx_den))
 
                 # self.__sdr.setGain(SOAPY_SDR_RX, 0, (self.__sdr.getGain(SOAPY_SDR_RX, 0)+1))
 
@@ -552,7 +589,7 @@ class RfEar(object):
                 fig.canvas.draw()
                 plt.pause(0.01)
             except KeyboardInterrupt:
-                print ('Liveplot interrupted by user')
+                print('Liveplot interrupted by user')
                 drawing = False
         return True
 
@@ -565,7 +602,8 @@ class RfEar(object):
         numoftx = self.__numoftx
 
         if numoftx > 7:
-            print('Number of tracked tx needs to be <=7!')  # see length of colorvec
+            print('Number of tracked tx needs to be <=7!'
+                  )  # see length of colorvec
             print('Terminate method!')
             return True
 
@@ -573,7 +611,8 @@ class RfEar(object):
         temp = np.zeros((numoftx, 1))
 
         plt.ion()  # turn interactive mode on
-        colorvec = ['b', 'r', 'g', 'm', 'c', 'k', 'y']  # all colors which can be used in the plot
+        colorvec = ['b', 'r', 'g', 'm', 'c', 'k',
+                    'y']  # all colors which can be used in the plot
 
         cnt = 0
         drawing = True
@@ -594,8 +633,11 @@ class RfEar(object):
                     firstdata = cnt - numofplottedsamples
 
                 for i in range(numoftx):
-                    plt.plot(rss[i, firstdata:-1], str(colorvec[i])+'.-',
-                             label="Freq = " + str(round(freq_found[i] / 1e6, 2)) + ' MHz' + '@ ' + str(round(rss[i, -1], 2)) + 'dBm')
+                    plt.plot(rss[i, firstdata:-1],
+                             str(colorvec[i]) + '.-',
+                             label="Freq = " +
+                             str(round(freq_found[i] / 1e6, 2)) + ' MHz' +
+                             '@ ' + str(round(rss[i, -1], 2)) + 'dBm')
                 plt.ylim(-140, 10)
                 plt.ylabel('RSS [dB]')
                 plt.grid()
@@ -603,7 +645,7 @@ class RfEar(object):
                 plt.pause(0.001)
 
             except KeyboardInterrupt:
-                print ('Liveplot interrupted by user')
+                print('Liveplot interrupted by user')
                 drawing = False
         return True
 
@@ -619,7 +661,10 @@ class RfEar(object):
         self.set_sdr_centerfreq(np.mean(freqtx))
         self.set_sdr_samplingrate(samplingrate)
         measurements = 100
-        SIZE = [4, 8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256]
+        SIZE = [
+            4, 8, 16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208,
+            224, 240, 256
+        ]
         VAR = []
         MEAN = []
         UPDATE = []
@@ -645,12 +690,15 @@ class RfEar(object):
             MEAN.append(np.mean(powerstack))
             UPDATE.append(calctime)
             total_time += elapsed_time
-            print (str(measurements) + ' measurements for batch-size ' + str(self.set_samplesize()) +
-                   ' * 1024 finished after ' + str(elapsed_time) + 's. => ' + str(measurements/elapsed_time) + 'Hz')
+            print(
+                str(measurements) + ' measurements for batch-size ' +
+                str(self.set_samplesize()) + ' * 1024 finished after ' +
+                str(elapsed_time) + 's. => ' +
+                str(measurements / elapsed_time) + 'Hz')
         print('')
-        print ('Finished.')
-        print ('Total time [sec]: ')
-        print (total_time)
+        print('Finished.')
+        print('Total time [sec]: ')
+        print(total_time)
         plt.figure()
         plt.grid()
         plt.plot(SIZE, VAR, 'ro')
@@ -658,8 +706,7 @@ class RfEar(object):
         plt.ylabel('Variance (dB)')
         plt.figure()
         plt.grid()
-        plt.errorbar(SIZE, MEAN, yerr=VAR,
-                     fmt='o', ecolor='g')
+        plt.errorbar(SIZE, MEAN, yerr=VAR, fmt='o', ecolor='g')
         plt.plot(SIZE, MEAN, 'x')
         plt.xlabel('Sample Size (*1024)')
         plt.ylabel('Mean Value (dB)')
@@ -679,7 +726,8 @@ class RfEar(object):
         :param numtx  -- number of the tx which rss is processed. Required to use the corresponding alpha and gamma-values.
         """
         z = 20 / (np.log(10) * self.__alpha[numtx]) * lambertw(
-            np.log(10) * self.__alpha[numtx] / 20 * np.exp(-np.log(10) / 20 * (rss + self.__gamma[numtx])))
+            np.log(10) * self.__alpha[numtx] / 20 *
+            np.exp(-np.log(10) / 20 * (rss + self.__gamma[numtx])))
         return z.real  # [mm]
 
 
@@ -689,7 +737,8 @@ def main():
 
     t.time()
 
-    wp_filename_rel_path = path.relpath('Aktuell/wp_list_2018_08_31_grid_meas_d50d50d50.txt')
+    wp_filename_rel_path = path.relpath(
+        'Aktuell/wp_list_2018_08_31_grid_meas_d50d50d50.txt')
 
     x0 = [300, 500, 0]
     xn = [3000, 1150, 600]
@@ -707,22 +756,20 @@ def main():
     # freq6tx = [433.975e6, 434.52e6, 434.61e6, 434.12e6, 434.275e6, 434.42e6]
     plt.ion()
 
-    # freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6, 434.175e6]  # NooElec
-    freq6tx = [434.12e6, 433.96e6, 434.17e6, 434.02e6, 434.22e6, 434.07e6]  # AirSpy
+    freq6tx = [434.325e6, 433.89e6, 434.475e6, 434.025e6, 434.62e6,
+               434.175e6]  # NooElec
+    # freq6tx = [434.12e6, 433.96e6, 434.17e6, 434.02e6, 434.22e6,
+    #            434.07e6]  # AirSpy
 
-    tx_6pos = [[830, 430, 600],
-               [1854, 435, 600],
-               [2874, 445, 600],
-               [2884, 1230, 600],
-               [1849, 1235, 600],
-               [834, 1225, 600]]
+    tx_6pos = [[830, 430, 600], [1854, 435, 600], [2874, 445, 600],
+               [2884, 1230, 600], [1849, 1235, 600], [834, 1225, 600]]
     Rf.set_txparams(freq6tx, tx_6pos)
 
     Rf.set_samplesize(32)
 
-    Rf.plot_power_spectrum_density()
-    # Rf.plot_txrss_live()
+    # Rf.plot_power_spectrum_density()
+    Rf.plot_txrss_live()
+
 
 if __name__ == '__main__':
     main()
-
